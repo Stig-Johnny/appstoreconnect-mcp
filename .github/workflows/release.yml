@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            rid: osx-arm64
+            artifact: appstoreconnect-mcp-osx-arm64
+          - os: macos-latest
+            rid: osx-x64
+            artifact: appstoreconnect-mcp-osx-x64
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: appstoreconnect-mcp-linux-x64
+          - os: ubuntu-latest
+            rid: linux-arm64
+            artifact: appstoreconnect-mcp-linux-arm64
+          - os: windows-latest
+            rid: win-x64
+            artifact: appstoreconnect-mcp-win-x64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish
+        run: |
+          dotnet publish AppStoreConnectMcp/AppStoreConnectMcp.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            -o publish/${{ matrix.artifact }}
+
+      - name: Archive (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cd publish
+          tar -czvf ${{ matrix.artifact }}.tar.gz ${{ matrix.artifact }}
+
+      - name: Archive (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd publish
+          Compress-Archive -Path ${{ matrix.artifact }} -DestinationPath ${{ matrix.artifact }}.zip
+
+      - name: Upload artifact (Unix)
+        if: runner.os != 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: publish/${{ matrix.artifact }}.tar.gz
+
+      - name: Upload artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: publish/${{ matrix.artifact }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
+          generate_release_notes: true

@@ -31,17 +31,35 @@ Required permissions for Xcode Cloud access:
 
 ## Installation
 
+### Download Pre-built Binary (Recommended)
+
+Download the self-contained executable for your platform from the [Releases page](https://github.com/Stig-Johnny/appstoreconnect-mcp/releases):
+
+| Platform | File |
+|----------|------|
+| macOS (Apple Silicon) | `appstoreconnect-mcp-osx-arm64.tar.gz` |
+| macOS (Intel) | `appstoreconnect-mcp-osx-x64.tar.gz` |
+| Linux (x64) | `appstoreconnect-mcp-linux-x64.tar.gz` |
+| Linux (ARM64) | `appstoreconnect-mcp-linux-arm64.tar.gz` |
+| Windows (x64) | `appstoreconnect-mcp-win-x64.zip` |
+
+No .NET installation required - the executables are fully self-contained.
+
+```bash
+# Example: macOS Apple Silicon
+curl -L https://github.com/Stig-Johnny/appstoreconnect-mcp/releases/latest/download/appstoreconnect-mcp-osx-arm64.tar.gz | tar xz
+chmod +x appstoreconnect-mcp-osx-arm64/AppStoreConnectMcp
+```
+
 ### Build from Source
+
+Requires .NET 8.0 SDK.
 
 ```bash
 git clone https://github.com/Stig-Johnny/appstoreconnect-mcp.git
 cd appstoreconnect-mcp/AppStoreConnectMcp
-dotnet build -c Release
+dotnet publish -c Release -r osx-arm64  # or your platform
 ```
-
-### Download Release
-
-Download the latest release from the [Releases page](https://github.com/Stig-Johnny/appstoreconnect-mcp/releases).
 
 ## Configuration
 
@@ -65,8 +83,7 @@ Add to your `.mcp.json` configuration:
   "mcpServers": {
     "appstoreconnect": {
       "type": "stdio",
-      "command": "dotnet",
-      "args": ["run", "--project", "/path/to/appstoreconnect-mcp/AppStoreConnectMcp"],
+      "command": "/path/to/appstoreconnect-mcp-osx-arm64/AppStoreConnectMcp",
       "env": {
         "APP_STORE_CONNECT_KEY_ID": "YOUR_KEY_ID",
         "APP_STORE_CONNECT_ISSUER_ID": "YOUR_ISSUER_ID",
@@ -77,14 +94,15 @@ Add to your `.mcp.json` configuration:
 }
 ```
 
-Or using the compiled executable:
+Or if building from source with .NET installed:
 
 ```json
 {
   "mcpServers": {
     "appstoreconnect": {
       "type": "stdio",
-      "command": "/path/to/appstoreconnect-mcp/AppStoreConnectMcp/bin/Release/net8.0/AppStoreConnectMcp",
+      "command": "dotnet",
+      "args": ["run", "--project", "/path/to/appstoreconnect-mcp/AppStoreConnectMcp"],
       "env": {
         "APP_STORE_CONNECT_KEY_ID": "YOUR_KEY_ID",
         "APP_STORE_CONNECT_ISSUER_ID": "YOUR_ISSUER_ID",
