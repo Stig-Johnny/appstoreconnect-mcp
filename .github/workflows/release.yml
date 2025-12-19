@@ -40,11 +40,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Publish
-        run: |
-          dotnet publish AppStoreConnectMcp/AppStoreConnectMcp.csproj \
-            -c Release \
-            -r ${{ matrix.rid }} \
-            -o publish/${{ matrix.artifact }}
+        run: dotnet publish AppStoreConnectMcp/AppStoreConnectMcp.csproj -c Release -r ${{ matrix.rid }} -o publish/${{ matrix.artifact }}
 
       - name: Archive (Unix)
         if: runner.os != 'Windows'
