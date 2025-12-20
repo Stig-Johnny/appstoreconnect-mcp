@@ -125,11 +125,11 @@ public class AppStoreConnectClient : IDisposable
     }
 
     /// <summary>
-    /// Lists all builds for a specific Xcode Cloud product.
+    /// Lists all builds for a specific Xcode Cloud product, sorted by newest first.
     /// </summary>
     public async Task<JsonDocument> ListBuildsForProductAsync(string productId, int limit = 10, CancellationToken cancellationToken = default)
     {
-        return await GetAsync($"/ciProducts/{productId}/buildRuns?limit={limit}", cancellationToken);
+        return await GetAsync($"/ciProducts/{productId}/buildRuns?limit={limit}&sort=-number", cancellationToken);
     }
 
     /// <summary>
