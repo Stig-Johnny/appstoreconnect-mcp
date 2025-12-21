@@ -180,6 +180,171 @@ public class AppStoreConnectClient : IDisposable
         return await GetAsync($"/ciBuildActions/{actionId}/issues", cancellationToken);
     }
 
+    /// <summary>
+    /// Gets a specific artifact's details including the download URL.
+    /// </summary>
+    public async Task<JsonDocument> GetArtifactAsync(string artifactId, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync($"/ciArtifacts/{artifactId}", cancellationToken);
+    }
+
+    /// <summary>
+    /// Downloads a file from a given URL (used for artifact downloads).
+    /// </summary>
+    public async Task<byte[]> DownloadFileAsync(string url, CancellationToken cancellationToken = default)
+    {
+        var token = GenerateToken();
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadAsByteArrayAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets build logs for a specific action by downloading and parsing the LOG_BUNDLE artifact.
+    /// </summary>
+    public async Task<string> GetBuildLogsAsync(string actionId, int tailLines = 500, CancellationToken cancellationToken = default)
+    {
+        // Step 1: List artifacts for this action
+        var artifactsDoc = await ListArtifactsAsync(actionId, cancellationToken);
+        var artifacts = artifactsDoc.RootElement.GetProperty("data");
+
+        // Step 2: Find the LOG_BUNDLE artifact
+        string? logArtifactId = null;
+        foreach (var artifact in artifacts.EnumerateArray())
+        {
+            var artifactType = artifact.GetProperty("attributes").GetProperty("fileType").GetString();
+            if (artifactType == "LOG_BUNDLE")
+            {
+                logArtifactId = artifact.GetProperty("id").GetString();
+                break;
+            }
+        }
+
+        if (logArtifactId == null)
+        {
+            return "No LOG_BUNDLE artifact found for this action.";
+        }
+
+        // Step 3: Get the artifact's download URL
+        var artifactDoc = await GetArtifactAsync(logArtifactId, cancellationToken);
+        var downloadUrl = artifactDoc.RootElement
+            .GetProperty("data")
+            .GetProperty("attributes")
+            .GetProperty("downloadUrl")
+            .GetString();
+
+        if (string.IsNullOrEmpty(downloadUrl))
+        {
+            return "LOG_BUNDLE artifact found but no download URL available.";
+        }
+
+        // Step 4: Download the zip file
+        byte[] zipData;
+        try
+        {
+            zipData = await DownloadFileAsync(downloadUrl, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            return $"Failed to download log bundle: {ex.Message}";
+        }
+
+        // Step 5: Extract and parse the logs
+        return ExtractAndParseLogs(zipData, tailLines);
+    }
+
+    /// <summary>
+    /// Extracts log files from a zip archive and returns relevant content.
+    /// </summary>
+    private static string ExtractAndParseLogs(byte[] zipData, int tailLines)
+    {
+        using var zipStream = new MemoryStream(zipData);
+        using var archive = new System.IO.Compression.ZipArchive(zipStream, System.IO.Compression.ZipArchiveMode.Read);
+
+        var result = new System.Text.StringBuilder();
+        var relevantFiles = new List<(string Name, string Content)>();
+
+        foreach (var entry in archive.Entries)
+        {
+            // Look for relevant log files
+            var name = entry.FullName.ToLowerInvariant();
+            if (name.EndsWith(".log") || name.EndsWith(".txt") ||
+                name.Contains("xcodebuild") || name.Contains("error") ||
+                name.Contains("build") || name.Contains("archive"))
+            {
+                try
+                {
+                    using var stream = entry.Open();
+                    using var reader = new StreamReader(stream);
+                    var content = reader.ReadToEnd();
+
+                    if (!string.IsNullOrWhiteSpace(content))
+                    {
+                        relevantFiles.Add((entry.FullName, content));
+                    }
+                }
+                catch
+                {
+                    // Skip files that can't be read
+                }
+            }
+        }
+
+        if (relevantFiles.Count == 0)
+        {
+            result.AppendLine("No readable log files found in the archive.");
+            result.AppendLine("\nArchive contents:");
+            foreach (var entry in archive.Entries.Take(50))
+            {
+                result.AppendLine($"  - {entry.FullName}");
+            }
+            return result.ToString();
+        }
+
+        // Prioritize files that likely contain errors
+        var prioritized = relevantFiles
+            .OrderByDescending(f => f.Name.Contains("error", StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(f => f.Name.Contains("xcodebuild", StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(f => f.Content.Contains("error:", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        foreach (var (fileName, content) in prioritized.Take(5))
+        {
+            result.AppendLine($"=== {fileName} ===");
+
+            // Get the last N lines
+            var lines = content.Split('\n');
+            var startIndex = Math.Max(0, lines.Length - tailLines);
+            var selectedLines = lines.Skip(startIndex).ToArray();
+
+            // Also extract any error lines from earlier in the file
+            var errorLines = lines.Take(startIndex)
+                .Where(l => l.Contains("error:", StringComparison.OrdinalIgnoreCase) ||
+                           l.Contains("fatal:", StringComparison.OrdinalIgnoreCase) ||
+                           l.Contains("failed:", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+
+            if (errorLines.Length > 0)
+            {
+                result.AppendLine("--- Errors found earlier in log ---");
+                foreach (var line in errorLines.Take(50))
+                {
+                    result.AppendLine(line);
+                }
+                result.AppendLine("--- End of earlier errors ---\n");
+            }
+
+            result.AppendLine(string.Join("\n", selectedLines));
+            result.AppendLine();
+        }
+
+        return result.ToString();
+    }
+
     public void Dispose()
     {
         _httpClient.Dispose();

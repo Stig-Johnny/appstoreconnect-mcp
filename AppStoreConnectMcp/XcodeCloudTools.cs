@@ -88,6 +88,15 @@ public class XcodeCloudTools
         return FormatResponse(result);
     }
 
+    [McpServerTool, Description("Download and parse build logs for a build action - returns detailed error information from Xcode build logs")]
+    public async Task<string> GetBuildLogs(
+        [Description("The action ID (from ListBuildActions)")] string actionId,
+        [Description("Number of lines to return from end of each log file (default: 500)")] int tailLines = 500,
+        CancellationToken cancellationToken = default)
+    {
+        return await _client.GetBuildLogsAsync(actionId, tailLines, cancellationToken);
+    }
+
     private static string FormatResponse(JsonDocument doc)
     {
         return JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
