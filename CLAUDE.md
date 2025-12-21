@@ -59,6 +59,7 @@ Two options for testing changes:
 | ListArtifacts | List build artifacts | Done |
 | GetTestResults | Get test results | Done |
 | ListIssues | List build errors/warnings | Done |
+| GetBuildLogs | Download & parse build logs | Done |
 
 ## Potential Enhancements
 
@@ -69,7 +70,6 @@ Two options for testing changes:
 - [ ] **CancelBuild** - Cancel a running build
 
 ### Medium Priority
-- [ ] **DownloadArtifact** - Download build logs/archives
 - [ ] **ListApps** - List all apps (not just Xcode Cloud enabled)
 - [ ] **GetApp** - Get app details (bundle ID, name, etc.)
 - [ ] **ListBetaTesters** - List TestFlight testers
