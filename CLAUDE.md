@@ -49,6 +49,8 @@ Two options for testing changes:
 
 ## Current Tools
 
+### Xcode Cloud Tools
+
 | Tool | Description | Status |
 |------|-------------|--------|
 | ListProducts | List Xcode Cloud products | Done |
@@ -61,6 +63,45 @@ Two options for testing changes:
 | ListIssues | List build errors/warnings | Done |
 | GetBuildLogs | Download & parse build logs | Done |
 
+### App Store Tools
+
+| Tool | Description | Status |
+|------|-------------|--------|
+| ListApps | List all apps in App Store Connect | Done |
+| GetAppByBundleId | Get app details by bundle ID | Done |
+| ListAppStoreVersions | List versions for an app | Done |
+| GetEditableVersion | Get current editable version | Done |
+| ListVersionLocalizations | List localizations for a version | Done |
+| UpdateVersionLocalization | Update metadata (description, keywords) | Done |
+
+### Screenshot Tools
+
+| Tool | Description | Status |
+|------|-------------|--------|
+| ListScreenshotSets | List screenshot sets for localization | Done |
+| CreateScreenshotSet | Create new screenshot set | Done |
+| ListScreenshots | List screenshots in a set | Done |
+| UploadScreenshot | Upload single screenshot | Done |
+| UploadScreenshotsFromDirectory | Upload all screenshots from directory | Done |
+| UploadAppScreenshots | Full flow: app → screenshots | Done |
+| DeleteScreenshot | Delete a screenshot | Done |
+
+### App Store Submission Tools
+
+| Tool | Description | Status |
+|------|-------------|--------|
+| ListAppBuilds | List builds for an app | Done |
+| GetBuild | Get build details | Done |
+| AttachBuildToVersion | Attach build to App Store version | Done |
+| UpdateAppStoreVersion | Update version metadata (copyright, release) | Done |
+| GetAgeRatingDeclaration | Get age rating for version | Done |
+| UpdateAgeRatingDeclaration | Update age rating values | Done |
+| GetAppStoreReviewDetail | Get review submission info | Done |
+| CreateAppStoreReviewDetail | Create review contact info | Done |
+| UpdateAppStoreReviewDetail | Update review info | Done |
+| SubmitForReview | Submit version for App Store review | Done |
+| CheckSubmissionReadiness | Check if version is ready | Done |
+
 ## Potential Enhancements
 
 ### High Priority
@@ -69,15 +110,11 @@ Two options for testing changes:
 - [ ] **StartBuild** - Trigger a new build for a workflow
 - [ ] **CancelBuild** - Cancel a running build
 
-### Medium Priority
-- [ ] **ListApps** - List all apps (not just Xcode Cloud enabled)
-- [ ] **GetApp** - Get app details (bundle ID, name, etc.)
-- [ ] **ListBetaTesters** - List TestFlight testers
-
 ### Lower Priority
 - [ ] **GetBuildMetrics** - Build duration, success rate trends
 - [ ] **ListMacOSVersions** - Available macOS versions for builds
 - [ ] **ListXcodeVersions** - Available Xcode versions
+- [ ] **ListBetaTesters** - List TestFlight testers
 
 ## API Reference
 
@@ -92,7 +129,8 @@ Two options for testing changes:
 AppStoreConnectMcp/
 ├── Program.cs              # Entry point, MCP server setup
 ├── AppStoreConnectClient.cs # API client, JWT auth, HTTP calls
-└── XcodeCloudTools.cs      # MCP tool definitions
+├── XcodeCloudTools.cs      # Xcode Cloud tools (builds, actions, logs)
+└── AppStoreTools.cs        # App Store tools (apps, versions, submission)
 ```
 
 ### Adding a New Tool
