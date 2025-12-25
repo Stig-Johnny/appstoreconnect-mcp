@@ -117,6 +117,94 @@ public class AppStoreConnectClient : IDisposable
     }
 
     /// <summary>
+    /// Makes an authenticated POST request to the App Store Connect API.
+    /// </summary>
+    public async Task<JsonDocument> PostAsync(string endpoint, object data, CancellationToken cancellationToken = default)
+    {
+        var token = GenerateToken();
+
+        var json = JsonSerializer.Serialize(data);
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}{endpoint}")
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"POST {endpoint} failed with {response.StatusCode}: {content}");
+        }
+
+        return JsonDocument.Parse(content);
+    }
+
+    /// <summary>
+    /// Makes an authenticated PATCH request to the App Store Connect API.
+    /// </summary>
+    public async Task<JsonDocument> PatchAsync(string endpoint, object data, CancellationToken cancellationToken = default)
+    {
+        var token = GenerateToken();
+
+        var json = JsonSerializer.Serialize(data);
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"{BaseUrl}{endpoint}")
+        {
+            Content = new StringContent(json, System.Text.Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"PATCH {endpoint} failed with {response.StatusCode}: {content}");
+        }
+
+        return JsonDocument.Parse(content);
+    }
+
+    /// <summary>
+    /// Makes an authenticated DELETE request to the App Store Connect API.
+    /// </summary>
+    public async Task DeleteAsync(string endpoint, CancellationToken cancellationToken = default)
+    {
+        var token = GenerateToken();
+
+        var request = new HttpRequestMessage(HttpMethod.Delete, $"{BaseUrl}{endpoint}");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"DELETE {endpoint} failed with {response.StatusCode}: {content}");
+        }
+    }
+
+    /// <summary>
+    /// Uploads binary data to a URL (for screenshot uploads).
+    /// </summary>
+    public async Task UploadBinaryAsync(string url, byte[] data, string contentType, CancellationToken cancellationToken = default)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, url)
+        {
+            Content = new ByteArrayContent(data)
+        };
+        request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync(cancellationToken);
+            throw new HttpRequestException($"Upload failed with {response.StatusCode}: {content}");
+        }
+    }
+
+    /// <summary>
     /// Lists all Xcode Cloud products (apps configured with Xcode Cloud).
     /// </summary>
     public async Task<JsonDocument> ListCiProductsAsync(CancellationToken cancellationToken = default)
