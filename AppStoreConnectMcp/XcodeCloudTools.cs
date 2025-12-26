@@ -138,15 +138,21 @@ public class XcodeCloudTools
         [Description("The build run ID to cancel")] string buildRunId,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            await _client.CancelBuildAsync(buildRunId, cancellationToken);
-            return $"Build {buildRunId} cancelled successfully.";
-        }
-        catch (HttpRequestException ex)
-        {
-            return $"Failed to cancel build: {ex.Message}";
-        }
+        // The App Store Connect API does not support cancelling builds programmatically.
+        // The ciBuildRuns endpoint only allows CREATE and GET operations.
+        return $@"**Cannot Cancel Build via API**
+
+The App Store Connect API does not support cancelling Xcode Cloud builds programmatically.
+The ciBuildRuns endpoint only allows CREATE (start) and GET (read) operations.
+
+To cancel build {buildRunId} manually:
+1. Open Xcode → Report Navigator → Cloud tab
+2. Find the build and click 'Cancel'
+
+Or use App Store Connect web:
+1. Go to https://appstoreconnect.apple.com
+2. Navigate to your app → Xcode Cloud → Builds
+3. Find the build and cancel it";
     }
 
     private static string FormatResponse(JsonDocument doc)

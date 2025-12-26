@@ -320,14 +320,6 @@ public class AppStoreConnectClient : IDisposable
     }
 
     /// <summary>
-    /// Cancels a running build.
-    /// </summary>
-    public async Task CancelBuildAsync(string buildRunId, CancellationToken cancellationToken = default)
-    {
-        await DeleteAsync($"/ciBuildRuns/{buildRunId}", cancellationToken);
-    }
-
-    /// <summary>
     /// Downloads a file from a given URL (used for artifact downloads).
     /// </summary>
     public async Task<byte[]> DownloadFileAsync(string url, CancellationToken cancellationToken = default)

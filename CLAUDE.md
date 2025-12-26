@@ -70,7 +70,7 @@ Two options for testing changes:
 | ListWorkflows | List Xcode Cloud workflows for a product | Done |
 | GetWorkflow | Get workflow details (branch filters, triggers) | Done |
 | StartBuild | Trigger a new build for a workflow | Done |
-| CancelBuild | Cancel a running build | Done |
+| CancelBuild | Returns manual instructions (API doesn't support cancel) | Done |
 
 ### App Store Tools
 
