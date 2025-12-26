@@ -960,21 +960,29 @@ public class AppStoreTools
     }
 
     // ==================== App Data Privacy ====================
+    // NOTE: The App Store Connect API does NOT expose app privacy/data usage endpoints publicly.
+    // Privacy labels must be configured manually in App Store Connect web interface.
 
     [McpServerTool, Description("Get app's data privacy/usage declarations")]
     public async Task<string> GetAppDataUsages(
         [Description("The app ID")] string appId,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var result = await _client.GetAsync($"/apps/{appId}/appDataUsages", cancellationToken);
-            return FormatResponse(result);
-        }
-        catch (HttpRequestException ex)
-        {
-            return $"Error getting data usages: {ex.Message}";
-        }
+        // The appDataUsages endpoint is not available in the public API
+        return $@"**App Privacy Labels - Manual Step Required**
+
+The App Store Connect API does not expose app privacy/data usage endpoints publicly.
+You must configure privacy labels manually in App Store Connect:
+
+1. Go to: https://appstoreconnect.apple.com/apps/{appId}/appstore/appprivacy
+2. Answer the questionnaire about data collection
+3. Click 'Publish' when done
+
+For apps that don't collect data:
+- Select 'No' for all data collection questions
+- Click 'Publish' to confirm
+
+This is a one-time setup per app.";
     }
 
     [McpServerTool, Description("Declare that app does not collect any user data and publish the privacy declaration")]
@@ -982,44 +990,19 @@ public class AppStoreTools
         [Description("The app ID")] string appId,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            // The App Store Connect API requires you to either:
-            // 1. Declare specific data types you collect, OR
-            // 2. Have no declarations (meaning you don't collect data)
-            //
-            // First, delete any existing declarations
-            var existingResult = await _client.GetAsync($"/apps/{appId}/appDataUsages", cancellationToken);
-            var existingUsages = existingResult.RootElement.GetProperty("data");
+        // The appDataUsages endpoint is not available in the public API
+        return $@"**App Privacy Labels - Manual Step Required**
 
-            foreach (var usage in existingUsages.EnumerateArray())
-            {
-                var usageId = usage.GetProperty("id").GetString();
-                if (usageId != null)
-                {
-                    try
-                    {
-                        await _client.DeleteAsync($"/appDataUsages/{usageId}", cancellationToken);
-                    }
-                    catch
-                    {
-                        // Ignore deletion errors
-                    }
-                }
-            }
+The App Store Connect API does not support setting privacy labels programmatically.
+You must configure this manually in App Store Connect:
 
-            // Now we need to "publish" the privacy questionnaire
-            // This is done by updating the app info's privacyPolicyUrl or by submitting
-            // Unfortunately, the API doesn't have a direct "publish privacy" endpoint
-            // The privacy is auto-published when all requirements are met
+1. Go to: https://appstoreconnect.apple.com/apps/{appId}/appstore/appprivacy
+2. For each data type question, select 'No, we don't collect this data'
+3. When all questions are answered, click 'Publish'
 
-            return "Cleared all data usage declarations. Your app now shows 'No Data Collected'.\n\n" +
-                   "Note: To publish privacy info, ensure you have a Privacy Policy URL set in App Information.";
-        }
-        catch (HttpRequestException ex)
-        {
-            return $"Error setting data privacy: {ex.Message}";
-        }
+This confirms your app doesn't collect user data and publishes the privacy label.
+
+After publishing, run SubmitForReviewV2 again to check if all blockers are resolved.";
     }
 
     // ==================== Review Submission (V2 API) ====================
