@@ -111,10 +111,13 @@ Two options for testing changes:
 
 ### App Data Privacy Tools
 
+**Note:** The App Store Connect API does NOT expose app privacy endpoints publicly.
+These tools return manual instructions instead of calling the API.
+
 | Tool | Description | Status |
 |------|-------------|--------|
-| GetAppDataUsages | Get app's data privacy declarations | Done |
-| SetAppDataPrivacyNoCollection | Declare app collects no user data | Done |
+| GetAppDataUsages | Returns manual instructions for privacy setup | Done |
+| SetAppDataPrivacyNoCollection | Returns manual instructions for privacy setup | Done |
 
 ### Review Submission V2 Tools
 
