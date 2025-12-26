@@ -63,6 +63,15 @@ Two options for testing changes:
 | ListIssues | List build errors/warnings | Done |
 | GetBuildLogs | Download & parse build logs | Done |
 
+### Workflow Tools
+
+| Tool | Description | Status |
+|------|-------------|--------|
+| ListWorkflows | List Xcode Cloud workflows for a product | Done |
+| GetWorkflow | Get workflow details (branch filters, triggers) | Done |
+| StartBuild | Trigger a new build for a workflow | Done |
+| CancelBuild | Cancel a running build | Done |
+
 ### App Store Tools
 
 | Tool | Description | Status |
@@ -128,12 +137,6 @@ These tools return manual instructions instead of calling the API.
 | CancelReviewSubmission | Cancel a pending submission | Done |
 
 ## Potential Enhancements
-
-### High Priority
-- [ ] **ListWorkflows** - List Xcode Cloud workflows for a product
-- [ ] **GetWorkflow** - Get workflow details (branch filters, triggers)
-- [ ] **StartBuild** - Trigger a new build for a workflow
-- [ ] **CancelBuild** - Cancel a running build
 
 ### Lower Priority
 - [ ] **GetBuildMetrics** - Build duration, success rate trends

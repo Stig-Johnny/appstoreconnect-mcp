@@ -277,6 +277,57 @@ public class AppStoreConnectClient : IDisposable
     }
 
     /// <summary>
+    /// Lists all workflows for a specific Xcode Cloud product.
+    /// </summary>
+    public async Task<JsonDocument> ListWorkflowsAsync(string productId, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync($"/ciProducts/{productId}/workflows", cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets details for a specific Xcode Cloud workflow.
+    /// </summary>
+    public async Task<JsonDocument> GetWorkflowAsync(string workflowId, CancellationToken cancellationToken = default)
+    {
+        return await GetAsync($"/ciWorkflows/{workflowId}?include=repository", cancellationToken);
+    }
+
+    /// <summary>
+    /// Starts a new build for a specific workflow.
+    /// </summary>
+    public async Task<JsonDocument> StartBuildAsync(string workflowId, string? gitReference = null, CancellationToken cancellationToken = default)
+    {
+        var data = new
+        {
+            data = new
+            {
+                type = "ciBuildRuns",
+                relationships = new
+                {
+                    workflow = new
+                    {
+                        data = new
+                        {
+                            type = "ciWorkflows",
+                            id = workflowId
+                        }
+                    }
+                }
+            }
+        };
+
+        return await PostAsync("/ciBuildRuns", data, cancellationToken);
+    }
+
+    /// <summary>
+    /// Cancels a running build.
+    /// </summary>
+    public async Task CancelBuildAsync(string buildRunId, CancellationToken cancellationToken = default)
+    {
+        await DeleteAsync($"/ciBuildRuns/{buildRunId}", cancellationToken);
+    }
+
+    /// <summary>
     /// Downloads a file from a given URL (used for artifact downloads).
     /// </summary>
     public async Task<byte[]> DownloadFileAsync(string url, CancellationToken cancellationToken = default)

@@ -97,6 +97,58 @@ public class XcodeCloudTools
         return await _client.GetBuildLogsAsync(actionId, tailLines, cancellationToken);
     }
 
+    // ==================== Workflow Management ====================
+
+    [McpServerTool, Description("List all Xcode Cloud workflows for a product")]
+    public async Task<string> ListWorkflows(
+        [Description("The product ID (from ListProducts)")] string productId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _client.ListWorkflowsAsync(productId, cancellationToken);
+        return FormatResponse(result);
+    }
+
+    [McpServerTool, Description("Get details for a specific Xcode Cloud workflow including branch filters and triggers")]
+    public async Task<string> GetWorkflow(
+        [Description("The workflow ID (from ListWorkflows)")] string workflowId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _client.GetWorkflowAsync(workflowId, cancellationToken);
+        return FormatResponse(result);
+    }
+
+    [McpServerTool, Description("Start a new Xcode Cloud build for a workflow")]
+    public async Task<string> StartBuild(
+        [Description("The workflow ID to trigger")] string workflowId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _client.StartBuildAsync(workflowId, null, cancellationToken);
+            return FormatResponse(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Failed to start build: {ex.Message}";
+        }
+    }
+
+    [McpServerTool, Description("Cancel a running Xcode Cloud build")]
+    public async Task<string> CancelBuild(
+        [Description("The build run ID to cancel")] string buildRunId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await _client.CancelBuildAsync(buildRunId, cancellationToken);
+            return $"Build {buildRunId} cancelled successfully.";
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Failed to cancel build: {ex.Message}";
+        }
+    }
+
     private static string FormatResponse(JsonDocument doc)
     {
         return JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
