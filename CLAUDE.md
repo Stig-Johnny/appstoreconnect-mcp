@@ -102,6 +102,28 @@ Two options for testing changes:
 | SubmitForReview | Submit version for App Store review | Done |
 | CheckSubmissionReadiness | Check if version is ready | Done |
 
+### App Pricing Tools
+
+| Tool | Description | Status |
+|------|-------------|--------|
+| SetAppPricingFree | Set app pricing to Free ($0) | Done |
+| GetAppPricing | Get current app pricing schedule | Done |
+
+### App Data Privacy Tools
+
+| Tool | Description | Status |
+|------|-------------|--------|
+| GetAppDataUsages | Get app's data privacy declarations | Done |
+| SetAppDataPrivacyNoCollection | Declare app collects no user data | Done |
+
+### Review Submission V2 Tools
+
+| Tool | Description | Status |
+|------|-------------|--------|
+| SubmitForReviewV2 | Submit using new reviewSubmissions API | Done |
+| GetReviewSubmissions | Get existing review submissions | Done |
+| CancelReviewSubmission | Cancel a pending submission | Done |
+
 ## Potential Enhancements
 
 ### High Priority
