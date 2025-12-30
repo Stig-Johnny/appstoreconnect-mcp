@@ -36,6 +36,65 @@ public class AppStoreTools
         return FormatResponse(result);
     }
 
+    // ==================== Bundle IDs ====================
+
+    [McpServerTool, Description("List all registered bundle IDs in your Apple Developer account")]
+    public async Task<string> ListBundleIds(
+        [Description("Filter by platform: IOS, MAC_OS, or UNIVERSAL (optional)")] string? platform = null,
+        CancellationToken cancellationToken = default)
+    {
+        var endpoint = "/bundleIds";
+        if (!string.IsNullOrEmpty(platform))
+        {
+            endpoint += $"?filter[platform]={platform}";
+        }
+        var result = await _client.GetAsync(endpoint, cancellationToken);
+        return FormatResponse(result);
+    }
+
+    [McpServerTool, Description("Register a new bundle ID in your Apple Developer account. This is required before creating an app in App Store Connect.")]
+    public async Task<string> RegisterBundleId(
+        [Description("The bundle identifier (e.g., 'com.example.myapp')")] string identifier,
+        [Description("Display name for the bundle ID (e.g., 'My App')")] string name,
+        [Description("Platform: IOS, MAC_OS, or UNIVERSAL (default: IOS)")] string platform = "IOS",
+        CancellationToken cancellationToken = default)
+    {
+        // Validate platform
+        var validPlatforms = new[] { "IOS", "MAC_OS", "UNIVERSAL" };
+        if (!validPlatforms.Contains(platform.ToUpperInvariant()))
+        {
+            return $"Error: Invalid platform '{platform}'. Must be one of: {string.Join(", ", validPlatforms)}";
+        }
+
+        var payload = new
+        {
+            data = new
+            {
+                type = "bundleIds",
+                attributes = new
+                {
+                    identifier = identifier,
+                    name = name,
+                    platform = platform.ToUpperInvariant()
+                }
+            }
+        };
+
+        try
+        {
+            var result = await _client.PostAsync("/bundleIds", payload, cancellationToken);
+            return FormatResponse(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            if (ex.Message.Contains("409") || ex.Message.Contains("ENTITY_ERROR.ATTRIBUTE.INVALID.DUPLICATE"))
+            {
+                return $"Error: Bundle ID '{identifier}' already exists. Use ListBundleIds to see existing bundle IDs.";
+            }
+            return $"Error registering bundle ID: {ex.Message}";
+        }
+    }
+
     // ==================== App Store Versions ====================
 
     [McpServerTool, Description("List all App Store versions for an app")]
