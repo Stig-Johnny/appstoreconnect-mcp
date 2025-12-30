@@ -71,6 +71,14 @@ Two options for testing changes:
 | GetWorkflow | Get workflow details (branch filters, triggers) | Done |
 | StartBuild | Trigger a new build for a workflow | Done |
 | CancelBuild | Returns manual instructions (API doesn't support cancel) | Done |
+| CheckXcodeCloudSetup | Check if app is ready for Xcode Cloud with setup guidance | Done |
+
+### Bundle ID Tools
+
+| Tool | Description | Status |
+|------|-------------|--------|
+| ListBundleIds | List all registered bundle IDs | Done |
+| RegisterBundleId | Register a new bundle ID in Apple Developer | Done |
 
 ### App Store Tools
 
