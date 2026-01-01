@@ -1195,6 +1195,317 @@ After publishing, run SubmitForReviewV2 again to check if all blockers are resol
         }
     }
 
+    // ==================== Subscription Groups ====================
+
+    [McpServerTool, Description("List all subscription groups for an app")]
+    public async Task<string> ListSubscriptionGroups(
+        [Description("The app ID")] string appId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _client.GetAsync($"/apps/{appId}/subscriptionGroups", cancellationToken);
+            return FormatResponse(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error listing subscription groups: {ex.Message}";
+        }
+    }
+
+    [McpServerTool, Description("Create a subscription group for an app. Required before creating subscriptions.")]
+    public async Task<string> CreateSubscriptionGroup(
+        [Description("The app ID")] string appId,
+        [Description("Reference name for the subscription group (internal use)")] string referenceName,
+        CancellationToken cancellationToken = default)
+    {
+        var payload = new
+        {
+            data = new
+            {
+                type = "subscriptionGroups",
+                attributes = new
+                {
+                    referenceName = referenceName
+                },
+                relationships = new
+                {
+                    app = new
+                    {
+                        data = new { type = "apps", id = appId }
+                    }
+                }
+            }
+        };
+
+        try
+        {
+            var result = await _client.PostAsync("/subscriptionGroups", payload, cancellationToken);
+            return $"Subscription group created successfully!\n\n{FormatResponse(result)}";
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error creating subscription group: {ex.Message}";
+        }
+    }
+
+    // ==================== Subscriptions ====================
+
+    [McpServerTool, Description("List all subscriptions in a subscription group")]
+    public async Task<string> ListSubscriptions(
+        [Description("The subscription group ID")] string subscriptionGroupId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _client.GetAsync($"/subscriptionGroups/{subscriptionGroupId}/subscriptions", cancellationToken);
+            return FormatResponse(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error listing subscriptions: {ex.Message}";
+        }
+    }
+
+    [McpServerTool, Description("Create an auto-renewable subscription in a subscription group")]
+    public async Task<string> CreateSubscription(
+        [Description("The subscription group ID")] string subscriptionGroupId,
+        [Description("Product ID (e.g., 'com.example.app.premium.monthly')")] string productId,
+        [Description("Reference name (internal use)")] string referenceName,
+        [Description("Subscription period: ONE_WEEK, ONE_MONTH, TWO_MONTHS, THREE_MONTHS, SIX_MONTHS, ONE_YEAR")] string subscriptionPeriod,
+        [Description("Review note for App Store review team (optional)")] string? reviewNote = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate subscription period
+        var validPeriods = new[] { "ONE_WEEK", "ONE_MONTH", "TWO_MONTHS", "THREE_MONTHS", "SIX_MONTHS", "ONE_YEAR" };
+        if (!validPeriods.Contains(subscriptionPeriod.ToUpperInvariant()))
+        {
+            return $"Error: Invalid subscription period '{subscriptionPeriod}'. Must be one of: {string.Join(", ", validPeriods)}";
+        }
+
+        var attributes = new Dictionary<string, object>
+        {
+            ["productId"] = productId,
+            ["name"] = referenceName,
+            ["subscriptionPeriod"] = subscriptionPeriod.ToUpperInvariant()
+        };
+
+        if (!string.IsNullOrEmpty(reviewNote))
+        {
+            attributes["reviewNote"] = reviewNote;
+        }
+
+        var payload = new
+        {
+            data = new
+            {
+                type = "subscriptions",
+                attributes = attributes,
+                relationships = new
+                {
+                    group = new
+                    {
+                        data = new { type = "subscriptionGroups", id = subscriptionGroupId }
+                    }
+                }
+            }
+        };
+
+        try
+        {
+            var result = await _client.PostAsync("/subscriptions", payload, cancellationToken);
+            return $"Subscription created successfully!\n\n{FormatResponse(result)}";
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error creating subscription: {ex.Message}";
+        }
+    }
+
+    [McpServerTool, Description("Get details for a specific subscription")]
+    public async Task<string> GetSubscription(
+        [Description("The subscription ID")] string subscriptionId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _client.GetAsync($"/subscriptions/{subscriptionId}?include=subscriptionLocalizations,prices", cancellationToken);
+            return FormatResponse(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error getting subscription: {ex.Message}";
+        }
+    }
+
+    // ==================== Subscription Localizations ====================
+
+    [McpServerTool, Description("Add a localization (display name, description) for a subscription")]
+    public async Task<string> CreateSubscriptionLocalization(
+        [Description("The subscription ID")] string subscriptionId,
+        [Description("Locale (e.g., 'en-US')")] string locale,
+        [Description("Display name shown to users")] string displayName,
+        [Description("Description shown to users (optional)")] string? description = null,
+        CancellationToken cancellationToken = default)
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            ["locale"] = locale,
+            ["name"] = displayName
+        };
+
+        if (!string.IsNullOrEmpty(description))
+        {
+            attributes["description"] = description;
+        }
+
+        var payload = new
+        {
+            data = new
+            {
+                type = "subscriptionLocalizations",
+                attributes = attributes,
+                relationships = new
+                {
+                    subscription = new
+                    {
+                        data = new { type = "subscriptions", id = subscriptionId }
+                    }
+                }
+            }
+        };
+
+        try
+        {
+            var result = await _client.PostAsync("/subscriptionLocalizations", payload, cancellationToken);
+            return $"Subscription localization created successfully!\n\n{FormatResponse(result)}";
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error creating subscription localization: {ex.Message}";
+        }
+    }
+
+    // ==================== Subscription Prices ====================
+
+    [McpServerTool, Description("List available subscription price points for a subscription")]
+    public async Task<string> ListSubscriptionPricePoints(
+        [Description("The subscription ID")] string subscriptionId,
+        [Description("Filter by territory (e.g., 'USA')")] string? territory = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var endpoint = $"/subscriptions/{subscriptionId}/pricePoints?limit=200";
+            if (!string.IsNullOrEmpty(territory))
+            {
+                endpoint += $"&filter[territory]={territory}";
+            }
+            var result = await _client.GetAsync(endpoint, cancellationToken);
+            return FormatResponse(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error listing subscription price points: {ex.Message}";
+        }
+    }
+
+    [McpServerTool, Description("Set price for a subscription in a territory")]
+    public async Task<string> SetSubscriptionPrice(
+        [Description("The subscription ID")] string subscriptionId,
+        [Description("The subscription price point ID (from ListSubscriptionPricePoints)")] string pricePointId,
+        [Description("Start date (ISO 8601, or null for immediate)")] string? startDate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var attributes = new Dictionary<string, object?>();
+        if (!string.IsNullOrEmpty(startDate))
+        {
+            attributes["startDate"] = startDate;
+        }
+        else
+        {
+            attributes["startDate"] = null;
+        }
+
+        var payload = new
+        {
+            data = new
+            {
+                type = "subscriptionPrices",
+                attributes = attributes,
+                relationships = new
+                {
+                    subscription = new
+                    {
+                        data = new { type = "subscriptions", id = subscriptionId }
+                    },
+                    subscriptionPricePoint = new
+                    {
+                        data = new { type = "subscriptionPricePoints", id = pricePointId }
+                    }
+                }
+            }
+        };
+
+        try
+        {
+            var result = await _client.PostAsync("/subscriptionPrices", payload, cancellationToken);
+            return $"Subscription price set successfully!\n\n{FormatResponse(result)}";
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error setting subscription price: {ex.Message}";
+        }
+    }
+
+    // ==================== Subscription Group Localizations ====================
+
+    [McpServerTool, Description("Add a localization for a subscription group (the display name in App Store)")]
+    public async Task<string> CreateSubscriptionGroupLocalization(
+        [Description("The subscription group ID")] string subscriptionGroupId,
+        [Description("Locale (e.g., 'en-US')")] string locale,
+        [Description("Display name for the subscription group")] string name,
+        [Description("Custom app name to display (optional)")] string? customAppName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var attributes = new Dictionary<string, object>
+        {
+            ["locale"] = locale,
+            ["name"] = name
+        };
+
+        if (!string.IsNullOrEmpty(customAppName))
+        {
+            attributes["customAppName"] = customAppName;
+        }
+
+        var payload = new
+        {
+            data = new
+            {
+                type = "subscriptionGroupLocalizations",
+                attributes = attributes,
+                relationships = new
+                {
+                    subscriptionGroup = new
+                    {
+                        data = new { type = "subscriptionGroups", id = subscriptionGroupId }
+                    }
+                }
+            }
+        };
+
+        try
+        {
+            var result = await _client.PostAsync("/subscriptionGroupLocalizations", payload, cancellationToken);
+            return $"Subscription group localization created successfully!\n\n{FormatResponse(result)}";
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Error creating subscription group localization: {ex.Message}";
+        }
+    }
+
     private static string FormatResponse(JsonDocument doc)
     {
         return JsonSerializer.Serialize(doc, new JsonSerializerOptions { WriteIndented = true });
