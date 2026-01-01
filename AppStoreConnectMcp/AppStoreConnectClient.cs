@@ -293,6 +293,146 @@ public class AppStoreConnectClient : IDisposable
     }
 
     /// <summary>
+    /// Creates a new Xcode Cloud product for an app.
+    /// </summary>
+    public async Task<JsonDocument> CreateCiProductAsync(string appId, string repositoryId, CancellationToken cancellationToken = default)
+    {
+        var data = new
+        {
+            data = new
+            {
+                type = "ciProducts",
+                relationships = new
+                {
+                    app = new
+                    {
+                        data = new
+                        {
+                            type = "apps",
+                            id = appId
+                        }
+                    },
+                    primaryRepositories = new
+                    {
+                        data = new[]
+                        {
+                            new
+                            {
+                                type = "scmRepositories",
+                                id = repositoryId
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        return await PostAsync("/ciProducts", data, cancellationToken);
+    }
+
+    /// <summary>
+    /// Creates a new Xcode Cloud workflow for a product.
+    /// </summary>
+    public async Task<JsonDocument> CreateCiWorkflowAsync(
+        string productId,
+        string repositoryId,
+        string name,
+        string containerFilePath,
+        string scheme,
+        string branchPattern = "main",
+        string? pathFilter = null,
+        CancellationToken cancellationToken = default)
+    {
+        var branchStartCondition = new Dictionary<string, object>
+        {
+            ["source"] = new
+            {
+                isAllMatch = false,
+                patterns = new[]
+                {
+                    new
+                    {
+                        pattern = branchPattern,
+                        isPrefix = false
+                    }
+                }
+            },
+            ["autoCancel"] = true
+        };
+
+        // Add path filter if specified
+        if (!string.IsNullOrEmpty(pathFilter))
+        {
+            branchStartCondition["filesAndFoldersRule"] = new
+            {
+                mode = "START_IF_ANY_FILE_MATCHES",
+                matchers = new[]
+                {
+                    new
+                    {
+                        directory = pathFilter,
+                        fileExtension = (string?)null,
+                        fileName = (string?)null
+                    }
+                }
+            };
+        }
+
+        var data = new
+        {
+            data = new
+            {
+                type = "ciWorkflows",
+                attributes = new
+                {
+                    name = name,
+                    description = "",
+                    containerFilePath = containerFilePath,
+                    isEnabled = true,
+                    isLockedForEditing = false,
+                    clean = true,
+                    branchStartCondition = branchStartCondition,
+                    actions = new[]
+                    {
+                        new
+                        {
+                            name = "Archive - iOS",
+                            actionType = "ARCHIVE",
+                            destination = (string?)null,
+                            buildDistributionAudience = "APP_STORE_ELIGIBLE",
+                            testConfiguration = (string?)null,
+                            scheme = scheme,
+                            platform = "IOS",
+                            isRequiredToPass = true
+                        }
+                    }
+                },
+                relationships = new
+                {
+                    product = new
+                    {
+                        data = new
+                        {
+                            type = "ciProducts",
+                            id = productId
+                        }
+                    },
+                    repository = new
+                    {
+                        data = new
+                        {
+                            type = "scmRepositories",
+                            id = repositoryId
+                        }
+                    }
+                }
+            }
+        };
+
+        return await PostAsync("/ciWorkflows", data, cancellationToken);
+    }
+
+    /// <summary>
     /// Starts a new build for a specific workflow.
     /// </summary>
     public async Task<JsonDocument> StartBuildAsync(string workflowId, string? gitReference = null, CancellationToken cancellationToken = default)
