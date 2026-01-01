@@ -133,6 +133,46 @@ public class XcodeCloudTools
         }
     }
 
+    [McpServerTool, Description("Create a new Xcode Cloud product for an app (connects app to repository for CI/CD)")]
+    public async Task<string> CreateCiProduct(
+        [Description("The app ID from App Store Connect")] string appId,
+        [Description("The SCM repository ID (get from an existing workflow's repository relationship)")] string repositoryId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _client.CreateCiProductAsync(appId, repositoryId, cancellationToken);
+            return FormatResponse(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Failed to create CI product: {ex.Message}";
+        }
+    }
+
+    [McpServerTool, Description("Create a new Xcode Cloud workflow for archiving and distributing to TestFlight")]
+    public async Task<string> CreateCiWorkflow(
+        [Description("The CI product ID (from CreateCiProduct or ListProducts)")] string productId,
+        [Description("The SCM repository ID")] string repositoryId,
+        [Description("Workflow name (e.g., 'My App - TestFlight')")] string name,
+        [Description("Path to the Xcode project or workspace (e.g., 'ios/MyApp.xcodeproj')")] string containerFilePath,
+        [Description("The Xcode scheme name to build")] string scheme,
+        [Description("Branch pattern to trigger on (default: 'main')")] string branchPattern = "main",
+        [Description("Optional path filter (e.g., 'ios' to only trigger on changes in ios folder)")] string? pathFilter = null,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var result = await _client.CreateCiWorkflowAsync(
+                productId, repositoryId, name, containerFilePath, scheme, branchPattern, pathFilter, cancellationToken);
+            return FormatResponse(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return $"Failed to create workflow: {ex.Message}";
+        }
+    }
+
     [McpServerTool, Description("Cancel a running Xcode Cloud build")]
     public async Task<string> CancelBuild(
         [Description("The build run ID to cancel")] string buildRunId,
